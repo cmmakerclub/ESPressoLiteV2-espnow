@@ -79,6 +79,10 @@ void SensorModule::setup() {
   pixels  = new Adafruit_NeoPixel(NUMPIXELS, 15, NEO_GRB + NEO_KHZ800); 
   pixels->begin();
   
+  dht->begin();
+  
+  Serial.printf("temp = %f  humid = %f", dht.readTemperature(), dht.readHumidity());
+  
   oled->init();
   oled->flipScreenVertically();
   oled->setContrast(255);
