@@ -1,12 +1,13 @@
 #include <CMMC_Module.h>
 #include <Wire.h>
 #include <SSD1306.h>
-#include <Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel.h> 
+#include <CMMC_Interval.h>
 
-#ifndef CMMC_LATTE2_MODULE_H
-#define CMMC_LATTE2_MODULE_H 
+#ifndef CMMC_SENSOR_MODULE
+#define CMMC_SENSOR_MODULE 
 
-
+const int MAX_ARRAY = 3;
 class SensorModule: public CMMC_Module {
   public:
     void config(CMMC_System *os, AsyncWebServer* server); 
@@ -17,6 +18,12 @@ class SensorModule: public CMMC_Module {
   private:
     Adafruit_NeoPixel *pixels;
     SSD1306 *oled;
+    float temp_array[MAX_ARRAY] = { 0.0 };
+    float humid_array[MAX_ARRAY] = { 0.0 };
+
+    float _temperature;
+    float _humidity;
+    CMMC_Interval interval;
 };
 
 #endif
