@@ -74,7 +74,7 @@ void SensorModule::configLoop() {
 }
 
 void SensorModule::setup() {
-
+  dht = new DHT(2, DHT11);
   oled  = new SSD1306(0x3c, 4, 5);
   pixels  = new Adafruit_NeoPixel(NUMPIXELS, 15, NEO_GRB + NEO_KHZ800); 
   pixels->begin();
