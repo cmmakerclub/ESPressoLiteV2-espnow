@@ -9,6 +9,7 @@
 #include <CMMC_SimplePair.h>
 #include <CMMC_LED.h>
 #include <CMMC_Interval.h>
+#include <modules/SensorModule.h>
 
 #define BUTTON_PIN  0
 

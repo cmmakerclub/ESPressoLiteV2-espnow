@@ -100,8 +100,8 @@ void ESPNowModule::loop() {
     memcpy(&packet.from, self_mac, 6); 
     packet.type = 1;
     packet.battery = 2;
-    // packet.field1 = bme->getTemperature()*100;
-    // packet.field2 = bme->getHumidity()*100;
+    packet.field1 = getTemperature()*100;
+    packet.field2 = getHumidity()*100;
     // Serial.printf("field1 = %lu \r\n", packet.field1);
     // Serial.printf("field2 = %lu \r\n", packet.field2);
     packet.ms = millis();

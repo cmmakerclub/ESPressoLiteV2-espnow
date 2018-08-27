@@ -74,14 +74,13 @@ void SensorModule::configLoop() {
 }
 
 void SensorModule::setup() {
-  dht = new DHT(2, DHT11);
+  dht = new DHT(12, DHT11);
   oled  = new SSD1306(0x3c, 4, 5);
   pixels  = new Adafruit_NeoPixel(NUMPIXELS, 15, NEO_GRB + NEO_KHZ800); 
   pixels->begin();
   
   dht->begin();
-  
-  Serial.printf("temp = %f  humid = %f", dht.readTemperature(), dht.readHumidity());
+  Serial.printf("temp = %f  humid = %f", dht->readTemperature(), dht->readHumidity());
   
   oled->init();
   oled->flipScreenVertically();
@@ -95,6 +94,9 @@ void SensorModule::setup() {
 void SensorModule::loop() { 
   interval.every_ms(1000, [&]() {
     int idx = counter++ % MAX_ARRAY;
+    temp_array[idx] = dht->readTemperature();
+    humid_array[idx] = dht->readHumidity();
+
     if (counter < MAX_ARRAY)
         {
           _temperature = median(temp_array, idx + 1);
@@ -106,6 +108,14 @@ void SensorModule::loop() {
           _humidity = median(humid_array, MAX_ARRAY);
         }    
   });
+}
 
 
+float SensorModule::getTemperature() {
+  return _temperature;
+}
+
+
+float SensorModule::getHumidity() {
+  return _humidity;
 }

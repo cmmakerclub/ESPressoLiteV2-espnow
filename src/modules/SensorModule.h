@@ -9,7 +9,7 @@
 #define CMMC_SENSOR_MODULE 
 
 const int MAX_ARRAY = 3;
-const int MAX_ARRAY = 3;
+
 
 class SensorModule: public CMMC_Module {
   public:
@@ -17,6 +17,8 @@ class SensorModule: public CMMC_Module {
     void setup();
     void loop(); 
     void configLoop();
+    float getTemperature();
+    float getHumidity();
   protected:
   private:
     Adafruit_NeoPixel *pixels;
