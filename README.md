@@ -1,1 +1,1 @@
-# latte-680-battery
+# ESPresso Lite 2.0 + ESPNow
