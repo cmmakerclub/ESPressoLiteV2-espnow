@@ -1,65 +1,81 @@
 #include "ESPNowModule.h"
 
-void printMacAddress(uint8_t* macaddr, uint8_t newline = 0) {
+extern SensorModule *sensorModule;
+
+void printMacAddress(uint8_t *macaddr, uint8_t newline = 0)
+{
   Serial.print("{");
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 6; i++)
+  {
     Serial.print("0x");
     Serial.print(macaddr[i], HEX);
-    if (i < 5) Serial.print(',');
+    if (i < 5)
+      Serial.print(',');
   }
   Serial.println("};");
 }
 
-void dump(const u8* data, size_t size) {
-  for (size_t i = 0; i < size; i++) {
+void dump(const u8 *data, size_t size)
+{
+  for (size_t i = 0; i < size; i++)
+  {
     Serial.printf("%02x ", data[i]);
   }
   Serial.println();
 }
 
-void convertMacStringToUint8(const char* mac_str, uint8_t* target) {
+void convertMacStringToUint8(const char *mac_str, uint8_t *target)
+{
   String macStr = String(mac_str);
-  for (size_t i = 0; i < 12; i += 2) {
+  for (size_t i = 0; i < 12; i += 2)
+  {
     String mac = macStr.substring(i, i + 2);
     byte b = strtoul(mac.c_str(), 0, 16);
     target[i / 2] = b;
   }
 }
 
-void macByteToString(const u8* data, char *target) {
+void macByteToString(const u8 *data, char *target)
+{
   bzero(target, 13);
   sprintf(target, "%02x%02x%02x%02x%02x%02x", data[0], data[1], data[2], data[3], data[4], data[5]);
 }
 
-uint8_t* getESPNowControllerMacAddress() {
+uint8_t *getESPNowControllerMacAddress()
+{
   uint8_t _controller_macaddr[6];
   bzero(_controller_macaddr, 6);
   wifi_get_macaddr(STATION_IF, _controller_macaddr);
   return _controller_macaddr;
 }
 
-uint8_t* getESPNowSlaveMacAddress() {
+uint8_t *getESPNowSlaveMacAddress()
+{
   uint8_t _slave_macaddr[6];
   bzero(_slave_macaddr, 6);
   wifi_get_macaddr(STATION_IF, _slave_macaddr);
   return _slave_macaddr;
 }
 
-uint32_t checksum(uint8_t* data, size_t len) {
+uint32_t checksum(uint8_t *data, size_t len)
+{
   uint32_t sum = 0;
-  while (len--) {
+  while (len--)
+  {
     sum += *(data++);
   }
   return sum;
 }
 
-void ESPNowModule::config(CMMC_System *os, AsyncWebServer* server) {
+void ESPNowModule::config(CMMC_System *os, AsyncWebServer *server)
+{
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(13, INPUT_PULLUP); 
-  uint8_t* slave_addr = getESPNowSlaveMacAddress();
+  pinMode(13, INPUT_PULLUP);
+  uint8_t *slave_addr = getESPNowSlaveMacAddress();
   memcpy(self_mac, slave_addr, 6);
   // dump(self_mac, 6);
-  this->led = ((CMMC_Legend*) os)->getBlinker();;
+  this->led = ((CMMC_Legend *)os)->getBlinker();
+  ;
   strcpy(this->path, "/api/espnow");
 
   static ESPNowModule *that = this;
@@ -68,16 +84,20 @@ void ESPNowModule::config(CMMC_System *os, AsyncWebServer* server) {
   this->_managerPtr = new CMMC_ConfigManager("/espnow.json");
   this->_managerPtr->init();
 
-  this->_managerPtr->load_config([&](JsonObject * root, const char* content) {
-    if (root == NULL) return;
+  this->_managerPtr->load_config([&](JsonObject *root, const char *content) {
+    if (root == NULL)
+      return;
     Serial.println("[user] json loaded..");
-    if (root->containsKey("mac")) {
-      String macStr = String((*root)["mac"].as<const char*>());
-      const char* device = (*root)["deviceName"].as<const char*>();
+    if (root->containsKey("mac"))
+    {
+      String macStr = String((*root)["mac"].as<const char *>());
+      const char *device = (*root)["deviceName"].as<const char *>();
       String deviceName;
-      if (device != NULL) {
-        deviceName  = String(device);
-        if (strlen(device) > 15) {
+      if (device != NULL)
+      {
+        deviceName = String(device);
+        if (strlen(device) > 15)
+        {
           Serial.println("device name is too long.");
         }
         strcpy(_sensorName, deviceName.c_str());
@@ -87,36 +107,48 @@ void ESPNowModule::config(CMMC_System *os, AsyncWebServer* server) {
       convertMacStringToUint8(macStr.c_str(), mac);
       memcpy(that->master_mac, mac, 6);
     }
-    else {
+    else
+    {
       Serial.println("no mac field.");
     }
   });
   this->configWebServer();
 }
 
-void ESPNowModule::loop() {
-  sendingInterval.every_ms(5*1000, [&]() { 
-    memcpy(&packet.to, master_mac, 6); 
-    memcpy(&packet.from, self_mac, 6); 
+void ESPNowModule::loop()
+{
+  sendingInterval.every_ms(5 * 1000, [&]() {
+    memcpy(&packet.to, master_mac, 6);
+    memcpy(&packet.from, self_mac, 6);
     packet.type = 1;
     packet.battery = 2;
-    packet.field1 = getTemperature()*100;
-    packet.field2 = getHumidity()*100;
+
+    if (sensorModule->getTemperature() > 0.0)
+    {
+      packet.field1 = sensorModule->getTemperature() * 100;
+    }
+
+    if (sensorModule->getHumidity() > 0.0)
+    {
+      packet.field2 = sensorModule->getHumidity() * 100;
+    }
+
     // Serial.printf("field1 = %lu \r\n", packet.field1);
     // Serial.printf("field2 = %lu \r\n", packet.field2);
     packet.ms = millis();
     strcpy(packet.sensorName, _sensorName);
-    packet.nameLen = strlen(packet.sensorName); 
+    packet.nameLen = strlen(packet.sensorName);
     packet.battery = analogRead(A0) * 5 / 991.232;
-    packet.sum = checksum((uint8_t*) &packet, sizeof(packet) - sizeof(packet.sum)); 
-    dump((u8*) &packet, sizeof(packet)); 
+    packet.sum = checksum((uint8_t *)&packet, sizeof(packet) - sizeof(packet.sum));
+    dump((u8 *)&packet, sizeof(packet));
 
-    espNow.send(master_mac, (u8*) &packet, sizeof(packet), [&]() {
-      Serial.printf("espnow sending timeout. sleepTimeM = %lu\r\n", _defaultDeepSleep_m); 
+    espNow.send(master_mac, (u8 *)&packet, sizeof(packet), [&]() {
+      Serial.printf("espnow sending timeout. sleepTimeM = %lu\r\n", _defaultDeepSleep_m);
       // _go_sleep(_defaultDeepSleep_m);
-    }, 2000); 
+    },
+                2000);
 
-    Serial.println("SENDING...."); 
+    Serial.println("SENDING....");
   });
   // u8 t = 1;
   // if (millis() % 100 == 0) {
@@ -128,18 +160,22 @@ void ESPNowModule::loop() {
   // delay(10);
 }
 
-void ESPNowModule::configLoop() {
-  if (digitalRead(BUTTON_PIN) == 0) {
+void ESPNowModule::configLoop()
+{
+  if (digitalRead(BUTTON_PIN) == 0)
+  {
     _init_simple_pair();
     delay(1000);
   }
-  if (digitalRead(13) == 0) {
+  if (digitalRead(13) == 0)
+  {
     File f = SPIFFS.open("/enabled", "a+");
     ESP.restart();
   }
 }
 
-void ESPNowModule::setup() {
+void ESPNowModule::setup()
+{
   _init_espnow();
   // memcpy(&userKadyaiData.to, master_mac, 6);
   // userKadyaiData.sum = CMMC::checksum((uint8_t*) &userKadyaiData, sizeof(userKadyaiData) - sizeof(userKadyaiData.sum));
@@ -155,19 +191,20 @@ void ESPNowModule::setup() {
   // }, 1000);
 }
 
-void ESPNowModule::_init_espnow() {
+void ESPNowModule::_init_espnow()
+{
   // espNow.debug([](const char* msg) { Serial.println(msg); });
   espNow.init(NOW_MODE_SLAVE);
   espNow.enable_retries(true);
   static CMMC_LED *led;
-  static ESPNowModule* module;
-  led = ((CMMC_Legend*) os)->getBlinker();
+  static ESPNowModule *module;
+  led = ((CMMC_Legend *)os)->getBlinker();
   led->detach();
   espNow.on_message_sent([](uint8_t *macaddr, u8 status) {
     led->toggle();
   });
   module = this;
-  espNow.on_message_recv([](uint8_t * macaddr, uint8_t * data, uint8_t len) {
+  espNow.on_message_recv([](uint8_t *macaddr, uint8_t *data, uint8_t len) {
     led->toggle();
     Serial.printf("RECV: len = %u byte, sleepTime = %lu at(%lu ms)\r\n", len, data[0], millis());
     // TODO: GO FOR SLEEP
@@ -175,14 +212,16 @@ void ESPNowModule::_init_espnow() {
   });
 }
 
-void ESPNowModule::_init_simple_pair() {
+void ESPNowModule::_init_simple_pair()
+{
   Serial.println("calling simple pair.");
   this->led->blink(250);
   static ESPNowModule *module = this;
   static bool *flag = &sp_flag_done;
-  simplePair.begin(SLAVE_MODE, [](u8 status, u8 * sa, const u8 * data) {
+  simplePair.begin(SLAVE_MODE, [](u8 status, u8 *sa, const u8 *data) {
     Serial.println("evt_callback.");
-    if (status == 0) {
+    if (status == 0)
+    {
       char buf[13];
       char self_buf[13];
       Serial.printf("[CSP_EVENT_SUCCESS] STATUS: %d\r\n", status);
@@ -192,38 +231,43 @@ void ESPNowModule::_init_simple_pair() {
       dump(sa, 6);
       macByteToString(data, buf);
       macByteToString(module->self_mac, self_buf);
-      printMacAddress((uint8_t*)buf);
-      printMacAddress((uint8_t*)self_buf);
+      printMacAddress((uint8_t *)buf);
+      printMacAddress((uint8_t *)self_buf);
       module->_managerPtr->add_field("mac", buf);
       module->_managerPtr->add_field("self_mac", self_buf);
       module->_managerPtr->commit();
       Serial.println("DONE...");
       *flag = true;
     }
-    else {
-      Serial.printf("[CSP_EVENT_ERROR] %d: %s\r\n", status, (const char*)data);
+    else
+    {
+      Serial.printf("[CSP_EVENT_ERROR] %d: %s\r\n", status, (const char *)data);
     }
   });
 
   simplePair.start();
   uint32_t startMs = millis();
-  while (!sp_flag_done && (millis() - startMs < 10000)) {
+  while (!sp_flag_done && (millis() - startMs < 10000))
+  {
     Serial.println("waiting sp_flag_done ..");
     delay(1000L + (250 * sp_flag_done));
   }
-  if (sp_flag_done) {
+  if (sp_flag_done)
+  {
     module->led->blink(1000);
     delay(5000);
     ESP.restart();
     Serial.println("pair done.");
   }
-  else {
+  else
+  {
     Serial.println("do simple pair device not found.");
     module->led->blink(50);
   }
 }
 
-void ESPNowModule::_go_sleep(uint32_t deepSleepM) {
+void ESPNowModule::_go_sleep(uint32_t deepSleepM)
+{
   // deepSleepM = 1;
   Serial.printf("\r\nGo sleep for %lu min.\r\n", deepSleepM);
   Serial.println("bye!");

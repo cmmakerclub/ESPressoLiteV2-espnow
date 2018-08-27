@@ -4,11 +4,13 @@
 #include "modules/ESPNowModule.h"
 
 CMMC_Legend os;
-
+SensorModule *sensorModule;
 
 void setup()
 {
-  os.addModule(new SensorModule());
+  sensorModule = new SensorModule();
+  os.addModule(sensorModule);
+  
   os.addModule(new ESPNowModule());
   os.setup();
   Serial.printf("APP VERSION: %s\r\n", LEGEND_APP_VERSION);
