@@ -117,11 +117,11 @@ void ESPNowModule::config(CMMC_System *os, AsyncWebServer *server)
 
 void ESPNowModule::loop()
 {
-  sendingInterval.every_ms(5 * 1000, [&]() {
+  sendingInterval.every_ms(1 * 1000, [&]() {
     memcpy(&packet.to, master_mac, 6);
     memcpy(&packet.from, self_mac, 6);
     packet.type = 1;
-    packet.battery = 2;
+    packet.battery = (analogRead(A0) * 5 / 991.232) * 100;
 
     if (sensorModule->getTemperature() > 0.0)
     {
@@ -138,13 +138,13 @@ void ESPNowModule::loop()
     packet.ms = millis();
     strcpy(packet.sensorName, _sensorName);
     packet.nameLen = strlen(packet.sensorName);
-    packet.battery = analogRead(A0) * 5 / 991.232;
+    
     packet.sum = checksum((uint8_t *)&packet, sizeof(packet) - sizeof(packet.sum));
     dump((u8 *)&packet, sizeof(packet));
 
     espNow.send(master_mac, (u8 *)&packet, sizeof(packet), [&]() {
       Serial.printf("espnow sending timeout. sleepTimeM = %lu\r\n", _defaultDeepSleep_m);
-      // _go_sleep(_defaultDeepSleep_m);
+      _go_sleep(_defaultDeepSleep_m);
     },
                 2000);
 
@@ -208,7 +208,7 @@ void ESPNowModule::_init_espnow()
     led->toggle();
     Serial.printf("RECV: len = %u byte, sleepTime = %lu at(%lu ms)\r\n", len, data[0], millis());
     // TODO: GO FOR SLEEP
-    // module->_go_sleep(data[0]);
+    module->_go_sleep(data[0]);
   });
 }
 
