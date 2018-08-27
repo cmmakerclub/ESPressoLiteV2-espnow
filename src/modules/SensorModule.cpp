@@ -89,4 +89,19 @@ void SensorModule::setup() {
 }
 
 void SensorModule::loop() { 
+  interval.every_ms(1000, [&]() {
+    int idx = counter++ % MAX_ARRAY;
+    if (counter < MAX_ARRAY)
+        {
+          _temperature = median(temp_array, idx + 1);
+          _humidity = median(humid_array, idx + 1);
+        }
+        else
+        {
+          _temperature = median(temp_array, MAX_ARRAY);
+          _humidity = median(humid_array, MAX_ARRAY);
+        }    
+  });
+
+
 }
