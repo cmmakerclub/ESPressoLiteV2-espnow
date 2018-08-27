@@ -28,6 +28,7 @@ class SensorModule: public CMMC_Module {
     float _temperature;
     float _humidity;
     CMMC_Interval interval;
+    unsigned long counter = 0;
 };
 
 #endif
