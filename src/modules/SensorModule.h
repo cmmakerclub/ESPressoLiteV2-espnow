@@ -7,7 +7,7 @@
 #define CMMC_LATTE2_MODULE_H 
 
 
-class LatteModule: public CMMC_Module {
+class SensorModule: public CMMC_Module {
   public:
     void config(CMMC_System *os, AsyncWebServer* server); 
     void setup();

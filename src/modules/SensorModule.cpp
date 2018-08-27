@@ -1,16 +1,16 @@
-#include "LatteModule.h"
+#include "SensorModule.h"
 
 #define NUMPIXELS      7
 
 
-void LatteModule::config(CMMC_System *os, AsyncWebServer* server) {
-  static LatteModule *that = this;
+void SensorModule::config(CMMC_System *os, AsyncWebServer* server) {
+  static SensorModule *that = this;
   pixels  = new Adafruit_NeoPixel(NUMPIXELS, 15, NEO_GRB + NEO_KHZ800);
   oled  = new SSD1306(0x3c, 4, 5);
   pixels->begin();
 }
 
-void LatteModule::configLoop() { 
+void SensorModule::configLoop() { 
    for(int i=0;i<NUMPIXELS;i++){ 
     pixels->setPixelColor(i, pixels->Color(253, 10 , 2)); // Moderately bright green color. 
     pixels->show();
@@ -18,7 +18,7 @@ void LatteModule::configLoop() {
   } 
 }
 
-void LatteModule::setup() {
+void SensorModule::setup() {
 
   oled  = new SSD1306(0x3c, 4, 5);
   pixels  = new Adafruit_NeoPixel(NUMPIXELS, 15, NEO_GRB + NEO_KHZ800); 
@@ -33,5 +33,5 @@ void LatteModule::setup() {
   oled->display();
 }
 
-void LatteModule::loop() { 
+void SensorModule::loop() { 
 }
